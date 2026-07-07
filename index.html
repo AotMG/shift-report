@@ -47,7 +47,8 @@
         <div class="tab" onclick="goStep(2)">2. Утро</div>
         <div class="tab" onclick="goStep(3)">3. Приход</div>
         <div class="tab" onclick="goStep(4)">4. Движ.</div>
-        <div class="tab" onclick="goStep(5)">5. Вечер</div>                <div class="tab" onclick="goStep(6)">6. Касса</div>
+        <div class="tab" onclick="goStep(5)">5. Вечер</div>        
+        <div class="tab" onclick="goStep(6)">6. Касса</div>
         <div class="tab" onclick="goStep(7)">7. Отправка</div>
     </div>
 
@@ -96,7 +97,8 @@
     <div id="step-5" class="step">
         <h1>🌙 Остатки на вечер</h1>
         <div id="list-evening"></div>
-    </div>    <!-- ШАГ 6: КАССА И ПРОВЕРКА -->
+    </div>
+    <!-- ШАГ 6: КАССА И ПРОВЕРКА -->
     <div id="step-6" class="step">
         <h1>💰 Касса и проверка</h1>
         
@@ -138,14 +140,15 @@
     <script>
         // === 1. ВАШИ НАСТРОЙКИ ===
         // Впишите сюда email, куда нужно отправлять отчет
-        const TARGET_EMAIL = "ip_al_777@mail.ru"; 
+        const TARGET_EMAIL = "vash_email@gmail.com"; 
 
         // Проверка библиотеки Excel
         if (typeof XLSX === 'undefined') {
             alert('Ошибка: Не удалось загрузить библиотеку Excel. Проверьте интернет.');
         }
 
-        // === 2. БАЗА ТОВАРОВ (Цены нужны для расчетов) ===        const PRODUCTS = [
+        // === 2. БАЗА ТОВАРОВ (Цены нужны для расчетов) ===
+        const PRODUCTS = [
             {id:'milk', name:'Молоко л', cat:'🥛 Жидкая молочка', cost:105, mk:21, init:0},
             {id:'milk15', name:'Молоко 1,5 л', cat:'🥛 Жидкая молочка', cost:180, mk:60, init:0},
             {id:'kefir', name:'Кефир л', cat:'🥛 Жидкая молочка', cost:140, mk:28, init:0},            
@@ -194,7 +197,8 @@
             document.querySelectorAll('.tab')[n-1].classList.add('active');
             window.scrollTo(0, 0);
             
-            if(n === 2) renderList('list-morning', 'morning', false);            if(n === 3) renderList('list-arrival', 'arrival', false);
+            if(n === 2) renderList('list-morning', 'morning', false);
+            if(n === 3) renderList('list-arrival', 'arrival', false);
             if(n === 4) renderList('list-move', 'move', true);
             if(n === 5) renderList('list-evening', 'evening', false);        
         }
@@ -243,7 +247,8 @@
         }
         function renderExpenses() {            
             const c = document.getElementById('extra-expenses');
-            c.innerHTML = '';            data.expenses.forEach(e => {
+            c.innerHTML = '';
+            data.expenses.forEach(e => {
                 c.innerHTML += `<div class="extra-exp-row">
                     <input type="text" placeholder="Название" value="${e.name}" onchange="updateExpense(${e.id}, 'name', this.value)" style="flex:2; text-align:left; padding:12px; border:2px solid var(--border); border-radius:10px;">
                     <input type="number" placeholder="₽" value="${e.val}" onchange="updateExpense(${e.id}, 'val', this.value*1)" style="flex:1;">
@@ -292,7 +297,8 @@
             const msg = document.getElementById('final-msg');
             
             if(ok) {
-                btn.disabled = false;                msg.className = 'status-msg status-success';
+                btn.disabled = false;
+                msg.className = 'status-msg status-success';
                 msg.innerHTML = '✅ Проверка пройдена.';
                 data.validated = true;
             } else {
@@ -341,7 +347,8 @@
             ws_data.push(['КАССА', `Терминал: ${term}`, `Наличные: ${cash}`, `Расходы: ${exp+extraExp}`, `ИТОГО: ${term+cash-exp-extraExp}`]);
 
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);            XLSX.utils.book_append_sheet(wb, ws, "Отчет");
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Отчет");
             
             const fileName = `Otchet_${loc}_${date}.xlsx`;
             XLSX.writeFile(wb, fileName); // СКАЧИВАЕМ ФАЙЛ
