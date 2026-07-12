@@ -37,9 +37,45 @@
         .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .loading { text-align: center; padding: 20px; color: #666; }
+        /* Индикатор режима работы */
+        .status-indicator {
+         position: fixed;
+         top: 65px;
+         right: 10px;
+         padding: 4px 8px;
+         border-radius: 4px;
+         font-size: 11px;
+         font-weight: 700;
+         z-index: 101;
+         opacity: 0.9;
+         letter-spacing: 0.5px;
+        }
+        .status-online {
+         background: #34c759;
+         color: #fff;
+         box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+        }
+        .status-local {
+         background: #ff3b30;
+         color: #fff;
+         box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+        }
+
+/* Анимация мигания при загрузке */
+        @keyframes pulse {
+         0%, 100% { opacity: 0.9; }
+         50% { opacity: 0.5; }
+        }
+        .status-loading {
+         background: #8e8e93;
+         color: #fff;
+         animation: pulse 1.5s infinite;
+        }
     </style>
 </head>
 <body>
+    <!-- Индикатор режима работы -->
+    <div id="mode-indicator" class="status-indicator status-loading">LOAD...</div>
 
     <div class="tabs">
         <div class="tab active" onclick="goStep(1)">1. Инфо</div>
@@ -218,13 +254,119 @@
                 console.error('Ошибка загрузки товаров:', error);
                 alert('Не удалось загрузить товары из таблицы. Используются локальные данные.');
             }
+        // ═══════════════════════════════════════════════════════════════
+        // 📡 ПРОВЕРКА РЕЖИМА РАБОТЫ (ОНЛАЙН/ОФЛАЙН)
+        // ═══════════════════════════════════════════════════════════════
+        function setModeIndicator(mode) {
+        const indicator = document.getElementById('mode-indicator');
+    
+        if (mode === 'online') {
+            indicator.textContent = 'ONL';
+            indicator.className = 'status-indicator status-online';
+            indicator.title = 'Работа с онлайн-базой (цены из таблицы)';
+        } else if (mode === 'local') {
+                   indicator.textContent = 'LOC';
+                   indicator.className = 'status-indicator status-local';
+                   indicator.title = 'Работа с локальной базой (цены из кода)';
+        } else {
+                   indicator.textContent = 'LOAD...';
+                   indicator.className = 'status-indicator status-loading';
+                   indicator.title = 'Загрузка...';
+                   }  
         }
 
-        function onLocationChange() {
-            if (API_URL) {
-                loadProductsFromSheet();
-            }
+        async function loadProductsFromSheet() {
+        if (!API_URL) {
+            console.log('API_URL не задан, используем локальные данные');
+            setModeIndicator('local');
+        return false;
         }
+    
+        try {
+        const loc = document.getElementById('info-loc').value;
+        
+        // Добавляем таймаут 5 секунд
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(
+            `${API_URL}?action=getProducts&location=${encodeURIComponent(loc)}`,
+            { signal: controller.signal }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error('HTTP error: ' + response.status);
+        }
+        
+        const products = await response.json();
+        
+        if (products && products.length > 0) {            PRODUCTS = products.map(p => ({
+                id: p[1],
+                name: p[2],
+                cat: p[3],
+                cost: parseFloat(p[4]) || 0,
+                mk: parseFloat(p[5]) || 0,
+                init: 0
+            }));
+            productsLoaded = true;
+            initData();
+            console.log('✅ Товары загружены из таблицы:', PRODUCTS.length);
+            setModeIndicator('online');
+            return true;
+        } else {
+            throw new Error('Пустой ответ от сервера');
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка загрузки товаров:', error);
+        // Возвращаемся к локальным данным
+        PRODUCTS = [...PRODUCTS_LOCAL];
+        initData();
+        setModeIndicator('local');
+        return false;
+    }
+}
+
+async function onLocationChange() {
+    if (!API_URL) {
+        setModeIndicator('local');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    setModeIndicator('load');
+    
+    // Пытаемся загрузить из таблицы
+    const success = await loadProductsFromSheet();
+    
+    if (!success) {
+        // Если не получилось — используем локальные
+        console.log('Используем локальную базу данных');
+    }
+    
+    // Перерисовываем текущий шаг если нужно
+    const activeStep = document.querySelector('.step.active');
+    if (activeStep && activeStep.id !== 'step-1') {
+        const stepNum = parseInt(activeStep.id.replace('step-', ''));
+        if (stepNum >= 2 && stepNum <= 5) {
+            goStep(stepNum);        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+// ═══════════════════════════════════════════════════════════════
+
+// Запускаем проверку при загрузке страницы
+window.addEventListener('load', async () => {
+    if (API_URL) {
+        await onLocationChange();
+    } else {
+        setModeIndicator('local');
+    }
+});
 
         // ═══════════════════════════════════════════════════════════════
         // 🧭 НАВИГАЦИЯ
