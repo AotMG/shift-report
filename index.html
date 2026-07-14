@@ -518,7 +518,7 @@
                 const S = O + A - T - W - E;
                 
                 if (S < 0) errors.push(`${p.name}: Отрицательная продажа`);
-                if (S > 0) totalRev += S * (p.cost + p.mk); 
+                if (S > 0) totalRev += S * p.cost; 
             });
 
             const term = parseFloat(document.getElementById('cash-term').value) || 0;
