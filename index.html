@@ -587,8 +587,9 @@
                 const closeQty = data.evening[p.id] || 0;
                 const sales = openQty + arrQty - moveQty - closeQty;
                 const revenue = sales * p.cost;
+                const revenue = sales * p.mk;
                 
-                dataRows.push([date, loc, seller, p.id, p.name, openQty, arrQty, data.trans[p.id]||0, data.write[p.id]||0, closeQty, sales, p.cost, p.mk, revenue]);
+                dataRows.push([date, loc, seller, p.id, p.name, openQty, arrQty, data.trans[p.id]||0, data.write[p.id]||0, closeQty, sales, p.cost, p.mk, revenue, profit]);
             });
             
             // Готовим данные для листа "Касса"
