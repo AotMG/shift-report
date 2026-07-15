@@ -586,7 +586,7 @@
                 const moveQty = (data.trans[p.id]||0) + (data.write[p.id]||0);
                 const closeQty = data.evening[p.id] || 0;
                 const sales = openQty + arrQty - moveQty - closeQty;
-                const revenue = sales * (p.cost + p.mk);
+                const revenue = sales * p.cost;
                 
                 dataRows.push([date, loc, seller, p.id, p.name, openQty, arrQty, data.trans[p.id]||0, data.write[p.id]||0, closeQty, sales, p.cost, p.mk, revenue]);
             });
