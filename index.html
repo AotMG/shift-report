@@ -325,7 +325,7 @@
 
     <div id="step-3" class="step">
       <h1>🚚 Приход товара</h1>
-      <<div id="list-arrival"></div>
+      <div id="list-arrival"></div>
         <div id="total-arrival" class="total-box"></div>
 
         <div id="step-4" class="step">
@@ -906,7 +906,7 @@
                   const e = data.expenses.find(x => x.id === id); if (e) e[field] = val;
                 }
 
-                function renderExpe.nses() {
+                function renderExpenses() {
                   const c = document.getElementById('extra-expenses');
                   c.innerHTML = '';
                   data.expenses.forEach(e => {
