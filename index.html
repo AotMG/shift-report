@@ -541,8 +541,8 @@
             }
             
             html += `
-                <div class="res-row"><span>💰 Продано на:</span><strong>${totalRev.toLocaleString()} ₽</strong></div>
-                <div class="res-row"><span>🏦 В кассе:</span><strong>${actual.toLocaleString()} ₽</strong></div>
+                <div class="res-row"><span>💰 Реализация:</span><strong>${totalRev.toLocaleString()} ₽</strong></div>
+                <div class="res-row"><span>🏦 Выручка:</span><strong>${actual.toLocaleString()} ₽</strong></div>
                 <div class="res-row" style="font-size:18px;"><span>📉 Разница:</span><strong style="color:${ok?'var(--success)':'var(--danger)'}">${diff>=0?'+':''}${diff.toLocaleString()} ₽</strong></div>`;
             resDiv.innerHTML = html;
             
