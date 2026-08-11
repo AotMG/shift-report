@@ -528,7 +528,7 @@
             const extraExp = data.expenses.reduce((s, e) => s + (parseFloat(e.val)||0), 0);
             const totalExp = exp + extraExp;
             
-            const actual = term + cash - totalExp;
+            const actual = term + cash + totalExp;
             const diff = actual - totalRev; 
             const ok = Math.abs(diff) < 100 && errors.length === 0;
 
@@ -602,9 +602,9 @@
                 cash, 
                 exp, 
                 extraExp, 
-                term + cash - exp - extraExp, 
+                term + cash + exp + extraExp, 
                 dataRows.reduce((sum, row) => sum + row[13], 0), 
-                (term + cash - exp - extraExp) - dataRows.reduce((sum, row) => sum + row[13], 0)
+                (term + cash + exp + extraExp) - dataRows.reduce((sum, row) => sum + row[13], 0)
             ];
             
             try {
@@ -676,7 +676,7 @@
             const extraExp = data.expenses.reduce((s, e) => s + (parseFloat(e.val)||0), 0);
             
             ws_data.push([]);
-            ws_data.push(['КАССА', `Терминал: ${term}`, `Наличные: ${cash}`, `Расходы: ${exp+extraExp}`, `ИТОГО: ${term+cash-exp-extraExp}`]);
+            ws_data.push(['КАССА', `Терминал: ${term}`, `Наличные: ${cash}`, `Расходы: ${exp+extraExp}`, `ИТОГО: ${term+cash+exp+extraExp}`]);
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
