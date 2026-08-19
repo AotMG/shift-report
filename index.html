@@ -250,7 +250,7 @@
 
     <div id="step-1" class="step active">
         <h1>📋 Информация о смене</h1>
-        <div class="product-card">
+                <div class="product-card">
             <div class="p-name">Точка</div>
             <select id="info-loc" onchange="onLocationChange()">
                 <option value="Шапито">Шапито</option>
@@ -258,6 +258,7 @@
                 <option value="Гагарина">Парк Гагарина</option>
                 <option value="Поток">Поток</option>
             </select>
+            <div id="loading-indicator" style="display:none; color: #666; font-size: 13px; text-align: center; margin-top: 8px;">⏳ Загрузка товаров...</div>
         </div>
         <div class="product-card">
             <div class="p-name">Дата</div>
