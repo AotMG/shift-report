@@ -575,29 +575,37 @@
     // ═══════════════════════════════════════════════════════════════
     // 🎨 РЕНДЕР СПИСКОВ
     // ═══════════════════════════════════════════════════════════════
-    function renderList(containerId, dataKey, isMovements) {
-      const c = document.getElementById(containerId);
-      c.innerHTML = '';
-      let lastCat = '';
-      PRODUCTS.forEach(p => {
-        if (p.cat !== lastCat) {
-          c.innerHTML += `<div class="category">${p.cat}</div>`;
-          lastCat = p.cat;
+            function qty(v) {
+            const n = parseFloat(String(v).replace(',', '.'));
+            return isNaN(n) ? 0 : n;
         }
-        let html = `<div class="product-card"><div class="p-name">${p.name}</div>`;
-        if (isMovements) {
-          html += `<div class="dual-inputs">
-                        <input type="number" placeholder="Перем." value="${data.trans[p.id]||0}" onchange="data.trans['${p.id}']=this.value*1">
-                        <input type="number" placeholder="Списание" value="0" onchange="data.write['${p.id}']=this.value*1">
+
+        function renderList(containerId, dataKey, isMovements) {
+            const c = document.getElementById(containerId);
+            c.innerHTML = '';
+            let lastCat = '';
+            
+            PRODUCTS.forEach(p => {
+                if (p.cat !== lastCat) {
+                    c.innerHTML += `<div class="category">${p.cat}</div>`;
+                    lastCat = p.cat;
+                }
+                
+                let html = `<div class="product-card"><div class="p-name">${p.name}</div>`;
+                
+                if (isMovements) {
+                    html += `<div class="dual-inputs">
+                        <input type="text" inputmode="decimal" placeholder="Перем." value="${data.trans[p.id]||''}" onfocus="this.select()" onchange="data.trans['${p.id}']=qty(this.value)">
+                        <input type="text" inputmode="decimal" placeholder="Списание" value="${data.write[p.id]||''}" onfocus="this.select()" onchange="data.write['${p.id}']=qty(this.value)">
                     </div>`;
-        } else {
-          const val = dataKey === 'morning' ? data.morning[p.id] : data.evening[p.id];
-          html += `<input type="number" value="${val}" onchange="data.${dataKey}['${p.id}']=this.value*1">`;
+                } else {
+                    const val = data[dataKey][p.id] || 0;
+                    html += `<input type="text" inputmode="decimal" placeholder="0" value="${val||''}" onfocus="this.select()" onchange="data.${dataKey}['${p.id}']=qty(this.value)">`;
+                }
+                html += `</div>`;
+                c.innerHTML += html;
+            });
         }
-        html += `</div>`;
-        c.innerHTML += html;
-      });
-    }
     // ═══════════════════════════════════════════════════════════════
     // 💰 РАСХОДЫ
     // ═══════════════════════════════════════════════════════════════
