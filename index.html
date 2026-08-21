@@ -240,11 +240,91 @@
       padding: 20px;
       color: #666;
     }
+    
+    .qty-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      width: 100%;
+    }
+    
+    .qty-btn {
+      height: 44px;
+      min-height: 44px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0;
+    }
+    
+    .qty-btn.minus {
+      background: #ffe5e5;
+      color: #c00;
+    }
+    
+    .qty-btn.plus {
+      background: #e5f5e5;
+      color: #070;
+    }
+    
+    .qty-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .qty-input {
+      height: 44px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+      padding: 0 4px;
+      width: 100%;
+    }
+    
+    .qty-input:focus {
+      border-color: var(--primary);
+      outline: none;
+      background: #fff;
+    }
+    
+    .qty-label {
+      font-size: 13px;
+      color: #666;
+      margin: 8px 0 4px;
+      font-weight: 600;
+    }
+    
+    .summary-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      padding: 12px 16px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+      font-size: 15px;
+      font-weight: 600;
+      z-index: 99;
+      display: none;
+    }
+    
+    @media (max-width: 360px) {
+      .qty-btn {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
+  <div id="summary-panel" class="summary-panel"></div>
   <div class="tabs">
     <div class="tab active" onclick="goStep(1)">1. Инфо</div>
     <div class="tab" onclick="goStep(2)">2. Утро</div>
@@ -575,37 +655,115 @@
     // ═══════════════════════════════════════════════════════════════
     // 🎨 РЕНДЕР СПИСКОВ
     // ═══════════════════════════════════════════════════════════════
-            function qty(v) {
-            const n = parseFloat(String(v).replace(',', '.'));
-            return isNaN(n) ? 0 : n;
-        }
+    function qty(v) {
+      const n = parseFloat(String(v).replace(',', '.'));
+      return isNaN(n) ? 0 : n;
+    }
 
-        function renderList(containerId, dataKey, isMovements) {
-            const c = document.getElementById(containerId);
-            c.innerHTML = '';
-            let lastCat = '';
-            
-            PRODUCTS.forEach(p => {
-                if (p.cat !== lastCat) {
-                    c.innerHTML += `<div class="category">${p.cat}</div>`;
-                    lastCat = p.cat;
-                }
-                
-                let html = `<div class="product-card"><div class="p-name">${p.name}</div>`;
-                
-                if (isMovements) {
-                    html += `<div class="dual-inputs">
-                        <input type="text" inputmode="decimal" placeholder="Перем." value="${data.trans[p.id]||''}" onfocus="this.select()" onchange="data.trans['${p.id}']=qty(this.value)">
-                        <input type="text" inputmode="decimal" placeholder="Списание" value="${data.write[p.id]||''}" onfocus="this.select()" onchange="data.write['${p.id}']=qty(this.value)">
+    function renderQtyGrid(p, dataKey, isMovements, subKey) {
+      const key = subKey || dataKey;
+      const val = data[key][p.id] || 0;
+      return `
+                <div class="qty-grid">
+                    <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-10)">−10</button>
+                    <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-1)">−1</button>
+                    <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-0.5)">−½</button>
+                    <input type="text" inputmode="decimal" class="qty-input" id="qty-${key}-${p.id}"
+                           placeholder="0" value="${val||''}"
+                           onfocus="this.select()"
+                           onchange="data.${key}['${p.id}']=qty(this.value); updateSummary()">
+                    <button type="button" class="qty-btn plus" onclick="changeQty('${key}','${p.id}',0.5)">+½</button>
+                    <button type="button" class="qty-btn plus" onclick="changeQty('${key}','${p.id}',1)">+1</button>
+                    <button type="button" class="qty-btn plus" onclick="changeQty('${key}','${p.id}',10)">+10</button>
+                </div>
+            `;
+    }
+
+    function changeQty(key, id, delta) {
+      const current = data[key][id] || 0;
+      let newVal = current + delta;
+      if (newVal < 0) newVal = 0;
+      data[key][id] = newVal;
+      const inp = document.getElementById(`qty-${key}-${id}`);
+      if (inp) inp.value = newVal || '';
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const active = document.querySelector('.step.active');
+      const panel = document.getElementById('summary-panel');
+      if (!active || !panel) return;
+      const stepId = active.id;
+      let totalQty = 0,
+        totalRub = 0;
+      if (stepId === 'step-2') {
+        PRODUCTS.forEach(p => {
+          const q = data.morning[p.id] || 0;totalQty += q;totalRub += q * p.cost;
+        });
+        panel.innerHTML = `Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}`;
+        panel.style.display = 'block';
+      } else if (stepId === 'step-3') {
+        PRODUCTS.forEach(p => {
+          const q = data.arrival[p.id] || 0;totalQty += q;totalRub += q * p.cost;
+        });
+        panel.innerHTML = `Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}`;
+        panel.style.display = 'block';
+      } else if (stepId === 'step-4') {
+        PRODUCTS.forEach(p => {
+          const t = data.trans[p.id] || 0,
+            w = data.write[p.id] || 0;
+          totalQty += t + w;
+          totalRub += (t + w) * p.cost;
+        });
+        panel.innerHTML = `Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}`;
+        panel.style.display = 'block';
+      } else if (stepId === 'step-5') {
+        PRODUCTS.forEach(p => {
+          const q = data.evening[p.id] || 0;totalQty += q;totalRub += q * p.cost;
+        });
+        let salesQty = 0,
+          salesRub = 0;
+        PRODUCTS.forEach(p => {
+          const S = (data.morning[p.id] || 0) + (data.arrival[p.id] || 0) - (data.trans[p.id] || 0) - (data.write[p.id] || 0) - (data.evening[p.id] || 0);
+          if (S > 0) {
+            salesQty += S;
+            salesRub += S * p.cost;
+          }
+        });
+        panel.innerHTML = `
+                    <div>Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}</div>
+                    <div style="margin-top:4px; border-top:1px solid var(--border); padding-top:4px;">
+                        Реализация: ${salesQty} шт / ${salesRub.toLocaleString()} ₽
                     </div>`;
-                } else {
-                    const val = data[dataKey][p.id] || 0;
-                    html += `<input type="text" inputmode="decimal" placeholder="0" value="${val||''}" onfocus="this.select()" onchange="data.${dataKey}['${p.id}']=qty(this.value)">`;
-                }
-                html += `</div>`;
-                c.innerHTML += html;
-            });
+        panel.style.display = 'block';
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+
+    function renderList(containerId, dataKey, isMovements) {
+      const c = document.getElementById(containerId);
+      c.innerHTML = '';
+      let lastCat = '';
+      PRODUCTS.forEach(p => {
+        if (p.cat !== lastCat) {
+          c.innerHTML += `<div class="category">${p.cat}</div>`;
+          lastCat = p.cat;
         }
+        let html = `<div class="product-card"><div class="p-name">${p.name}</div>`;
+        if (isMovements) {
+          html += `<div class="qty-label">Перем.</div>`;
+          html += renderQtyGrid(p, dataKey, true, 'trans');
+          html += `<div class="qty-label">Списание</div>`;
+          html += renderQtyGrid(p, dataKey, true, 'write');
+        } else {
+          html += renderQtyGrid(p, dataKey, false);
+        }
+        html += `</div>`;
+        c.innerHTML += html;
+      });
+      updateSummary();
+    }
     // ═══════════════════════════════════════════════════════════════
     // 💰 РАСХОДЫ
     // ═══════════════════════════════════════════════════════════════
