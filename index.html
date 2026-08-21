@@ -277,17 +277,16 @@
     
 .qty-input {
     height: 44px;
-    font-size: 16px;
+    font-size: min(16px, 4vw); /* Уменьшается на узких экранах */
     font-weight: 600;
     text-align: center;
     border: 2px solid var(--border);
     border-radius: 8px;
     background: #fafafa;
-    padding: 0 6px;
+    padding: 0 4px;
     width: 100%;
     box-sizing: border-box;
-    min-width: 0; /* Важно для grid */
-    overflow: visible;
+    min-width: 0;
 }
     
     .qty-input:focus {
@@ -672,7 +671,7 @@
                     <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-1)">−1</button>
                     <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-0.5)">−½</button>
                     <input type="text" inputmode="decimal" class="qty-input" id="qty-${key}-${p.id}"
-                           placeholder="0" value="${val||''}"
+                           placeholder="—" value="${val||''}"
                            onfocus="this.select()"
                            onchange="data.${key}['${p.id}']=qty(this.value); updateSummary()">
                     <button type="button" class="qty-btn plus" onclick="changeQty('${key}','${p.id}',0.5)">+½</button>
