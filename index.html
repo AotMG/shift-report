@@ -606,64 +606,86 @@
     }
     console.log('🚀 СКРИПТ ЗАПУСТИЛСЯ!');
     initData();
-    initData();
     document.getElementById('info-date').valueAsDate = new Date();
     loadProductsFromSheet();
     // ═══════════════════════════════════════════════════════════════        // 📥 ЗАГРУЗКА ТОВАРОВ ИЗ GOOGLE ТАБЛИЦЫ
     // ═══════════════════════════════════════════════════════════════
        async function loadProductsFromSheet() {
-      if (!API_URL) {
-        console.log('API_URL не задан, используем локальные данные');
-        return;
-      }
-      document.getElementById('loading-indicator').style.display = 'block';
-      try {
-        const loc = document.getElementById('info-loc').value;
-        
-        // 1. Загружаем список товаров
-        const prodResponse = await fetch(`${API_URL}?action=getProducts&location=${encodeURIComponent(loc)}`);
-        const products = await prodResponse.json();
-        if (products && products.length > 0) {
-          PRODUCTS = products.map(p => ({
-            id: p[1],
-            name: p[2],
-            cat: p[3],
-            cost: parseFloat(p[4]) || 0,
-            mk: parseFloat(p[5]) || 0,
-            init: 0
-          }));
-          productsLoaded = true;
-          initData(); // Сбрасываем структуру данных под новый список товаров (всё в 0)
-        }
-
-        // 2. Загружаем последние вечерние остатки для авто-подстановки в утро
-        const closingResponse = await fetch(`${API_URL}?action=getLastClosing&location=${encodeURIComponent(loc)}`);
-        const closingMap = await closingResponse.json();
-        
-        if (closingMap && typeof closingMap === 'object') {
-          PRODUCTS.forEach(p => {
-            if (closingMap[p.name] !== undefined) {
-              const val = parseFloat(closingMap[p.name]) || 0;
-              data.morning[p.id] = val;
-              data.evening[p.id] = val; // Дублируем в вечер, чтобы продавец видел отправную точку
-            }
-          });
-        }
-
-        // 3. Если пользователь уже находится на шаге 2 или 5, перерисовываем их с новыми значениями
-        const activeStep = document.querySelector('.step.active');
-        if (activeStep) {
-          if (activeStep.id === 'step-2') renderList('list-morning', 'morning', false);
-          if (activeStep.id === 'step-5') renderList('list-evening', 'evening', false);
-        }
-
-      } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-        alert('Не удалось загрузить данные из таблицы. Проверьте интернет или URL скрипта.');
-      } finally {
-        document.getElementById('loading-indicator').style.display = 'none';
-      }
+  console.log(' Начинаем загрузку товаров...');
+  console.log('API_URL:', API_URL ? 'задан' : 'НЕ ЗАДАН!');
+  
+  if (!API_URL) {
+    console.log('API_URL не задан, используем локальные данные');
+    return;
+  }
+  
+  document.getElementById('loading-indicator').style.display = 'block';
+  try {
+    const loc = document.getElementById('info-loc').value;
+    console.log('📍 Точка:', loc);
+    
+    // 1. Загружаем список товаров
+    console.log('📦 Запрашиваем товары...');
+    const prodResponse = await fetch(`${API_URL}?action=getProducts&location=${encodeURIComponent(loc)}`);
+    console.log(' Ответ сервера (товары):', prodResponse.status);
+    const products = await prodResponse.json();
+    console.log('📦 Получено товаров:', products.length);
+    
+    if (products && products.length > 0) {
+      PRODUCTS = products.map(p => ({
+        id: p[1],
+        name: p[2],
+        cat: p[3],
+        cost: parseFloat(p[4]) || 0,
+        mk: parseFloat(p[5]) || 0,
+        init: 0
+      }));
+      productsLoaded = true;
+      initData(); // Сбрасываем структуру данных
+      console.log('✅ Товары загружены и initData() вызван');
     }
+
+    // 2. Загружаем последние остатки
+    console.log(' Запрашиваем последние остатки...');
+    const closingResponse = await fetch(`${API_URL}?action=getLastClosing&location=${encodeURIComponent(loc)}`);
+    console.log('📊 Ответ сервера (остатки):', closingResponse.status);
+    const closingMap = await closingResponse.json();
+    console.log('📊 Последние остатки:', closingMap);
+    
+    if (closingMap && typeof closingMap === 'object' && Object.keys(closingMap).length > 0) {
+      let matchedCount = 0;
+      PRODUCTS.forEach(p => {
+        const normalizedName = p.name.trim().toLowerCase();
+        for (const [key, value] of Object.entries(closingMap)) {
+          if (key.trim().toLowerCase() === normalizedName) {
+            const val = parseFloat(value) || 0;
+            data.morning[p.id] = val;
+            console.log(`✅ ${p.name} = ${val}`);
+            matchedCount++;
+            break;
+          }
+        }
+      });
+      console.log(`🎯 Совпало товаров: ${matchedCount} из ${PRODUCTS.length}`);
+    } else {
+      console.log('️ Остатки не найдены или пусты');
+    }
+
+    // 3. Перерисовываем текущий шаг
+    const activeStep = document.querySelector('.step.active');
+    console.log('👁️ Активный шаг:', activeStep ? activeStep.id : 'нет');
+    if (activeStep && activeStep.id === 'step-2') {
+      console.log(' Перерисовываем шаг 2...');
+      renderList('list-morning', 'morning', false);
+    }
+
+  } catch (error) {
+    console.error(' Ошибка загрузки:', error);
+    alert('Не удалось загрузить данные из таблицы.');
+  } finally {
+    document.getElementById('loading-indicator').style.display = 'none';
+  }
+}
 
     function onLocationChange() {
       if (API_URL) {
