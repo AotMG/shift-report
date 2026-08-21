@@ -241,25 +241,25 @@
       color: #666;
     }
     
-  .qty-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
-    gap: 3px;
-    width: 100%;
-}
+    .qty-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+      gap: 3px;
+      width: 100%;
+    }
     
-  .qty-btn {
-    height: 44px;
-    min-height: 44px;
-    font-size: 15px;
-    font-weight: 700;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    padding: 0 2px;
-}
+    .qty-btn {
+      height: 44px;
+      min-height: 44px;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0 2px;
+    }
     
     .qty-btn.minus {
       background: #ffe5e5;
@@ -275,19 +275,20 @@
       transform: scale(0.95);
     }
     
-.qty-input {
-    height: 44px;
-    font-size: min(16px, 4vw); /* Уменьшается на узких экранах */
-    font-weight: 600;
-    text-align: center;
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    background: #fafafa;
-    padding: 0 4px;
-    width: 100%;
-    box-sizing: border-box;
-    min-width: 0;
-}
+    .qty-input {
+      height: 44px;
+      font-size: min(16px, 4vw);
+      /* Уменьшается на узких экранах */
+      font-weight: 600;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+      padding: 0 4px;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+    }
     
     .qty-input:focus {
       border-color: var(--primary);
@@ -373,6 +374,9 @@
   <div id="step-4" class="step">
     <h1>🔄 Перемещение / Списание</h1>
     <div id="list-move"></div>
+    <div class="category" style="margin-top: 30px;">🏷️ Уценка / продажа не по цене</div>
+    <div id="markdown-list"></div>
+    <div class="add-row-btn" onclick="addMarkdown()">+ Добавить уценку</div>
   </div>
 
   <div id="step-5" class="step">
@@ -587,6 +591,7 @@
       write: {},
       evening: {},
       expenses: [],
+      markdown: [],
       validated: false
     };
 
@@ -663,21 +668,21 @@
     }
 
     function renderQtyGrid(p, dataKey, isMovements, subKey) {
-    const key = subKey || dataKey;
-    const val = data[key][p.id] || 0;
-    return `
+      const key = subKey || dataKey;
+      const val = data[key][p.id] || 0;
+      return `
         <div class="qty-grid">
             <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-10)">−10</button>
             <button type="button" class="qty-btn minus" onclick="changeQty('${key}','${p.id}',-1)">−1</button>
             <input type="text" inputmode="decimal" class="qty-input" id="qty-${key}-${p.id}"
-                   placeholder="0" value="${val||''}"
+                   placeholder="—" value="${val||''}"
                    onfocus="this.select()"
                    onchange="data.${key}['${p.id}']=qty(this.value); updateSummary()">
             <button type="button" class="qty-btn plus" onclick="changeQty('${key}','${p.id}',1)">+1</button>
             <button type="button" class="qty-btn plus" onclick="changeQty('${key}','${p.id}',10)">+10</button>
         </div>
     `;
-}
+    }
 
     function changeQty(key, id, delta) {
       const current = data[key][id] || 0;
@@ -709,36 +714,42 @@
         panel.innerHTML = `Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}`;
         panel.style.display = 'block';
       } else if (stepId === 'step-4') {
+        const {
+          U,
+          totalMarkdownRev
+        } = getMarkdownTotals();
         PRODUCTS.forEach(p => {
           const t = data.trans[p.id] || 0,
-            w = data.write[p.id] || 0;
-          totalQty += t + w;
+            w = data.write[p.id] || 0,
+            u = U[p.id] || 0;
+          totalQty += t + w + u;
           totalRub += (t + w) * p.cost;
         });
+        totalRub += totalMarkdownRev;
         panel.innerHTML = `Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}`;
         panel.style.display = 'block';
-      } else if (stepId === 'step-5') {
-        PRODUCTS.forEach(p => {
-          const q = data.evening[p.id] || 0;totalQty += q;totalRub += q * p.cost;
-        });
-        let salesQty = 0,
-          salesRub = 0;
-        PRODUCTS.forEach(p => {
-          const S = (data.morning[p.id] || 0) + (data.arrival[p.id] || 0) - (data.trans[p.id] || 0) - (data.write[p.id] || 0) - (data.evening[p.id] || 0);
-          if (S > 0) {
-            salesQty += S;
-            salesRub += S * p.cost;
-          }
-        });
-        panel.innerHTML = `
+    } else if (stepId === 'step-5') {
+      PRODUCTS.forEach(p => {
+        const q = data.evening[p.id] || 0;totalQty += q;totalRub += q * p.cost;
+      });
+      let salesQty = 0,
+        salesRub = 0;
+      PRODUCTS.forEach(p => {
+        const S = (data.morning[p.id] || 0) + (data.arrival[p.id] || 0) - (data.trans[p.id] || 0) - (data.write[p.id] || 0) - (data.evening[p.id] || 0);
+        if (S > 0) {
+          salesQty += S;
+          salesRub += S * p.cost;
+        }
+      });
+      panel.innerHTML = `
                     <div>Шт: ${totalQty} &nbsp;|&nbsp; ₽: ${totalRub.toLocaleString()}</div>
                     <div style="margin-top:4px; border-top:1px solid var(--border); padding-top:4px;">
                         Реализация: ${salesQty} шт / ${salesRub.toLocaleString()} ₽
                     </div>`;
-        panel.style.display = 'block';
-      } else {
-        panel.style.display = 'none';
-      }
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
     }
 
     function renderList(containerId, dataKey, isMovements) {
@@ -787,6 +798,47 @@
       if (e) e[field] = val;
     }
 
+    function addMarkdown() {
+      data.markdown.push({
+        id: Date.now(),
+        productId: PRODUCTS[0]?.id || '',
+        qty: 0,
+        price: 0
+      });
+      renderMarkdown();
+    }
+
+    function removeMarkdown(id) {
+      data.markdown = data.markdown.filter(e => e.id !== id);
+      renderMarkdown();
+      updateSummary();
+    }
+
+    function updateMarkdown(id, field, val) {
+      const e = data.markdown.find(x => x.id === id);
+      if (e) {
+        e[field] = val;
+        updateSummary();
+      }
+    }
+
+    function renderMarkdown() {
+      const c = document.getElementById('markdown-list');
+      c.innerHTML = '';
+      data.markdown.forEach(e => {
+        let options = PRODUCTS.map(p => `<option value="${p.id}" ${p.id === e.productId ? 'selected' : ''}>${p.name}</option>`).join('');
+        c.innerHTML += `
+                <div class="extra-exp-row">
+                    <select onchange="updateMarkdown(${e.id}, 'productId', this.value)" style="flex:2; text-align:left; padding:12px; border:2px solid var(--border); border-radius:10px; font-size:16px; background:#fafafa;">
+                        ${options}
+                    </select>
+                    <input type="text" inputmode="decimal" placeholder="Шт" value="${e.qty || ''}" onchange="updateMarkdown(${e.id}, 'qty', qty(this.value))" style="flex:1;">
+                    <input type="text" inputmode="decimal" placeholder="Цена" value="${e.price || ''}" onchange="updateMarkdown(${e.id}, 'price', qty(this.value))" style="flex:1;">
+                    <div class="remove-exp" onclick="removeMarkdown(${e.id})">×</div>
+                </div>`;
+      });
+    }
+
     function renderExpenses() {
       const c = document.getElementById('extra-expenses');
       c.innerHTML = '';
@@ -802,20 +854,40 @@
     // ═══════════════════════════════════════════════════════════════
     // ✅ ПРОВЕРКА
     // ═══════════════════════════════════════════════════════════════
+    function getMarkdownTotals() {
+      let U = {},
+        totalMarkdownRev = 0;
+      data.markdown.forEach(m => {
+        if (!U[m.productId]) U[m.productId] = 0;
+        U[m.productId] += (m.qty || 0);
+        totalMarkdownRev += (m.qty || 0) * (m.price || 0);
+      });
+      return {
+        U,
+        totalMarkdownRev
+      };
+    }
+
     function runValidation() {
       let totalSales = 0,
         totalRev = 0,
         errors = [];
+      const {
+        U,
+        totalMarkdownRev
+      } = getMarkdownTotals();
       PRODUCTS.forEach(p => {
         const O = data.morning[p.id] || 0;
         const A = data.arrival[p.id] || 0;
         const T = data.trans[p.id] || 0;
         const W = data.write[p.id] || 0;
+        const u = U[p.id] || 0;
         const E = data.evening[p.id] || 0;
-        const S = O + A - T - W - E;
+        const S = O + A - T - W - u - E;
         if (S < 0) errors.push(`${p.name}: Отрицательная продажа`);
         if (S > 0) totalRev += S * p.cost;
       });
+      totalRev += totalMarkdownRev;
       const term = parseFloat(document.getElementById('cash-term').value) || 0;
       const cash = parseFloat(document.getElementById('cash-cash').value) || 0;
       const exp = parseFloat(document.getElementById('cash-exp').value) || 0;
@@ -831,8 +903,10 @@
         html += `<div style="color:var(--danger); margin-bottom:12px;">❌ Ошибки:<br>${errors.join('<br>')}</div>`;
       }
       html += `
-                <div class="res-row"><span>💰 Реализация:</span><strong>${totalRev.toLocaleString()} ₽</strong></div>
-                <div class="res-row"><span>🏦 Выручка:</span><strong>${actual.toLocaleString()} ₽</strong></div>
+                <div class="res-row"><span>💰 Реализация (по цене):</span><strong>${(totalRev - totalMarkdownRev).toLocaleString()} ₽</strong></div>
+                <div class="res-row"><span>🏷️ Уценка:</span><strong>${totalMarkdownRev.toLocaleString()} ₽</strong></div>
+                <div class="res-row"><span>💰 Итого должно быть:</span><strong>${totalRev.toLocaleString()} ₽</strong></div>
+                <div class="res-row"><span>🏦 Факт (выручка):</span><strong>${actual.toLocaleString()} ₽</strong></div>
                 <div class="res-row" style="font-size:18px;"><span>📉 Разница:</span><strong style="color:${ok?'var(--success)':'var(--danger)'}">${diff>=0?'+':''}${diff.toLocaleString()} ₽</strong></div>`;
       resDiv.innerHTML = html;
       const btn = document.getElementById('btn-download');
@@ -847,7 +921,7 @@
         msg.className = 'status-msg';
         msg.style.background = '#fff3cd';
         msg.style.color = '#856404';
-        msg.innerHTML = '❌ Есть расхождения.';
+        msg.innerHTML = ' Есть расхождения.';
         data.validated = false;
       }
     }
@@ -864,16 +938,21 @@
       const exp = parseFloat(document.getElementById('cash-exp').value) || 0;
       const extraExp = data.expenses.reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
       // Готовим данные для листа "Данные"
+      const {
+        U
+      } = getMarkdownTotals();
       const dataRows = [];
       PRODUCTS.forEach(p => {
         const openQty = data.morning[p.id] || 0;
         const arrQty = data.arrival[p.id] || 0;
         const moveQty = (data.trans[p.id] || 0) + (data.write[p.id] || 0);
+        const uQty = U[p.id] || 0;
         const closeQty = data.evening[p.id] || 0;
-        const sales = openQty + arrQty - moveQty - closeQty;
+        const sales = openQty + arrQty - moveQty - uQty - closeQty;
         const revenue = sales * p.cost;
         const profit = sales * p.mk;
-        dataRows.push([date, loc, seller, p.id, p.name, openQty, arrQty, data.trans[p.id] || 0, data.write[p.id] || 0, closeQty, sales, p.cost, p.mk, revenue, profit]);
+        const uRev = data.markdown.filter(m => m.productId === p.id).reduce((sum, m) => sum + (m.qty || 0) * (m.price || 0), 0);
+        dataRows.push([date, loc, seller, p.id, p.name, openQty, arrQty, data.trans[p.id] || 0, data.write[p.id] || 0, closeQty, sales, p.cost, p.mk, revenue, profit, uQty, uRev]);
       });
       // Готовим данные для листа "Касса"
       const cashRow = [
